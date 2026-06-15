@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html class="light" lang="id">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Login - Announcer Pro</title>
+    <script src="{{ url_for('static', filename='js/tailwind.js') }}?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: { DEFAULT: "#008453", 50: "#ecfdf5", 100: "#d1fae5", 200: "#a7f3d0", 300: "#6ee7b7", 400: "#34d399", 500: "#10b981", 600: "#059669", 700: "#008453", 800: "#065f46", 900: "#064e3b" }
+            },
+            fontFamily: {
+              headline: ["Space Grotesk", "sans-serif"],
+              body: ["Inter", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-sm">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-lg p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-600/20">
+                    <span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings: 'FILL' 1;">mosque</span>
+                </div>
+                <h1 class="text-2xl font-headline font-bold text-slate-900">Announcer Pro</h1>
+                <p class="text-sm text-slate-500 mt-1">Masuk ke dashboard masjid</p>
+            </div>
+
+            {% if error %}
+            <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+                <span class="material-symbols-outlined text-red-600 text-sm">error</span>
+                <p class="text-red-700 text-sm font-bold">{{ error }}</p>
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Username</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <span class="material-symbols-outlined text-lg">person</span>
+                        </span>
+                        <input type="text" name="username" required
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                            placeholder="Masukkan username">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Password</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <span class="material-symbols-outlined text-lg">lock</span>
+                        </span>
+                        <input type="password" name="password" required
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                            placeholder="Masukkan password">
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-emerald-700 hover:shadow-md transition-all active:scale-[0.98]">
+                    <span class="material-symbols-outlined">login</span>
+                    Masuk
+                </button>
+            </form>
+        </div>
+        <p class="text-center text-xs text-slate-400 mt-6">Announcer Pro v2.0 &mdash; Sistem Kontrol Audio Masjid</p>
+    </div>
+</body>
+</html>

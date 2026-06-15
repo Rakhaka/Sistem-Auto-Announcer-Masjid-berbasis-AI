@@ -1,0 +1,58 @@
+{% set active_page = 'logs' %}
+{% extends "base.html" %}
+
+{% block title %}Log Sistem - Announcer Pro{% endblock %}
+
+{% block content %}
+<div class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto pb-20 md:pb-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl md:text-3xl font-headline font-bold text-slate-900 tracking-tight">Log Aktivitas</h2>
+                <p class="text-sm text-slate-500 mt-1">Riwayat lengkap operasional server & audio</p>
+            </div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-3 py-1.5 rounded-lg font-headline">{{ hari_ini }}</span>
+        </div>
+
+        <section class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="divide-y divide-slate-100">
+                {% for log in logs %}
+                <div class="flex items-center gap-4 p-4 md:p-5 hover:bg-slate-50 transition-colors">
+                    {% if log.kategori == 'murottal' %}
+                        <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0 hidden md:flex">
+                            <span class="material-symbols-outlined text-emerald-600 text-lg" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                        </div>
+                    {% elif log.kategori == 'jadwal' %}
+                        <div class="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center shrink-0 hidden md:flex">
+                            <span class="material-symbols-outlined text-purple-600 text-lg" style="font-variation-settings: 'FILL' 1;">campaign</span>
+                        </div>
+                    {% elif log.kategori == 'ai' %}
+                        <div class="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center shrink-0 hidden md:flex">
+                            <span class="material-symbols-outlined text-teal-600 text-lg" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+                        </div>
+                    {% else %}
+                        <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 hidden md:flex">
+                            <span class="material-symbols-outlined text-slate-600 text-lg">settings_power</span>
+                        </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-slate-900 text-sm">{{ log.pesan }}</p>
+                        <p class="text-sm text-slate-500 truncate">{{ log.detail }}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-xs font-bold text-slate-400">{{ log.jam }}</p>
+                        <p class="text-[9px] text-slate-400">{{ log.tanggal }}</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase mt-0.5 font-headline">{{ log.status }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="px-6 py-12 text-center">
+                    <span class="material-symbols-outlined text-4xl text-slate-300 mb-3 block">history</span>
+                    <p class="text-sm text-slate-400 italic">Belum ada aktivitas yang dicatat.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% set active_page = 'manajemen' %}
+{% extends "base.html" %}
+
+{% block title %}Manajemen Jadwal - Announcer Pro{% endblock %}
+
+{% block content %}
+<div class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto pb-20 md:pb-8">
+    <div class="max-w-5xl mx-auto">
+
+        <div class="mb-6">
+            <h2 class="text-2xl md:text-3xl font-headline font-bold text-slate-900 tracking-tight">Manajemen Jadwal</h2>
+            <p class="text-sm text-slate-500 mt-1">Atur jadwal pengumuman otomatis untuk masjid</p>
+        </div>
+
+        {% if pesan %}
+        <div class="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+            <span class="material-symbols-outlined text-emerald-600">check_circle</span>
+            <p class="text-emerald-800 font-bold text-sm">{{ pesan }}</p>
+        </div>
+        {% endif %}
+
+        <!-- ===== FORM BUAT JADWAL BARU ===== -->
+        <section class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-emerald-600">alarm_add</span>
+                </div>
+                <div>
+                    <h3 class="font-headline font-bold text-slate-900">Buat Jadwal Baru</h3>
+                    <p class="text-xs text-slate-500">Tambahkan pengumuman otomatis pada waktu tertentu</p>
+                </div>
+            </div>
+
+            <form action="/tambah_jadwal" method="POST" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Nama Pengumuman</label>
+                        <input type="text" name="nama_jadwal" required placeholder="Contoh: Peringatan 5 Menit"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300">
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Tipe Suara</label>
+                        <select id="tipe_audio" name="tipe_audio" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all cursor-pointer appearance-none">
+                            <option value="ai">Library Audio</option>
+                            <option value="murottal">Murottal (Streaming)</option>
+                        </select>
+                    </div>
+                    <div id="box_ai" class="md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Pilih Audio</label>
+                        <select name="audio_id_ai" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all cursor-pointer appearance-none">
+                            <option value="">-- Pilih File --</option>
+                            {% for audio in daftar_audio %}
+                                <option value="{{ audio.id }}">{{ audio.nama_file }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="box_murottal" class="md:col-span-1 hidden">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Pilih Surah</label>
+                        <select id="selectSurahMurottal" name="audio_id_murottal" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all cursor-pointer appearance-none">
+                            <option value="">Memuat surah...</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Waktu</label>
+                        <input type="time" name="waktu_putar" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all cursor-pointer">
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-emerald-700 hover:shadow-md transition-all active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-lg">add</span>
+                        Simpan Jadwal
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ===== DAFTAR JADWAL ===== -->
+        <section class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100">
+                <h3 class="font-headline font-bold text-lg text-slate-900">Daftar Jadwal Aktif</h3>
+                <p class="text-sm text-slate-500">Semua jadwal pengumuman yang tersimpan</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-800 text-slate-300 text-[10px] uppercase tracking-wider font-headline">
+                            <th class="text-left py-3.5 px-4 font-bold">Nama Pengumuman</th>
+                            <th class="text-left py-3.5 px-4 font-bold">Jam</th>
+                            <th class="text-left py-3.5 px-4 font-bold hidden md:table-cell">Isi Suara</th>
+                            <th class="text-left py-3.5 px-4 font-bold">Status</th>
+                            <th class="text-center py-3.5 px-4 font-bold">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for jadwal in daftar_jadwal %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-4 px-4 font-medium text-slate-900">{{ jadwal.nama_jadwal }}</td>
+                            <td class="py-4 px-4 font-bold text-emerald-600 font-headline">{{ jadwal.waktu_putar }}</td>
+                            <td class="py-4 px-4 text-slate-500 truncate max-w-[200px] hidden md:table-cell">
+                                {{ jadwal.teks }}
+                            </td>
+                            <td class="py-4 px-4">
+                                <form action="{{ url_for('toggle_jadwal', id=jadwal.id) }}" method="POST" class="m-0">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="status" class="sr-only peer" onchange="this.form.submit()" {% if jadwal.is_active %}checked{% endif %}>
+                                        <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500/30 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                        <span class="ml-2 text-xs font-medium text-slate-500">
+                                            {% if jadwal.is_active %}Aktif{% else %}Mati{% endif %}
+                                        </span>
+                                    </label>
+                                </form>
+                            </td>
+                            <td class="py-4 px-4 text-center">
+                                <button onclick="bukaModalEdit('{{ jadwal.id }}', '{{ jadwal.nama_jadwal }}', '{{ jadwal.waktu_putar }}')" class="w-9 h-9 inline-flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <a href="{{ url_for('hapus_jadwal', id=jadwal.id) }}" onclick="return confirm('Yakin ingin menghapus jadwal ini?')" class="w-9 h-9 inline-flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Hapus">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="py-12 text-center">
+                                <span class="material-symbols-outlined text-4xl text-slate-300 mb-3 block">event_busy</span>
+                                <p class="text-sm text-slate-400 italic">Belum ada jadwal yang dibuat.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<!-- ===== MODAL EDIT ===== -->
+<div id="modalEdit" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-headline font-bold text-lg text-slate-900">Edit Jadwal</h3>
+            <button onclick="tutupModalEdit()" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-all">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form action="/edit_jadwal" method="POST" class="p-6 space-y-4">
+            <input type="hidden" id="edit_id" name="id_jadwal">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Nama Pengumuman</label>
+                <input type="text" id="edit_nama" name="nama_jadwal" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Jam Tayang</label>
+                <input type="time" id="edit_jam" name="jam" lang="en-GB" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all" required>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="tutupModalEdit()" class="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-emerald-700 transition-all">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const tipe = document.getElementById('tipe_audio');
+    const boxAi = document.getElementById('box_ai');
+    const boxMurottal = document.getElementById('box_murottal');
+    const selectSurah = document.getElementById('selectSurahMurottal');
+
+    tipe.addEventListener('change', function() {
+        if(this.value === 'ai') {
+            boxAi.classList.remove('hidden');
+            boxMurottal.classList.add('hidden');
+        } else {
+            boxAi.classList.add('hidden');
+            boxMurottal.classList.remove('hidden');
+        }
+    });
+
+    function loadSurahList() {
+        fetch('/api/surah-list')
+            .then(r => r.json())
+            .then(data => {
+                if(!data || data.length === 0) {
+                    selectSurah.innerHTML = '<option value="">Gagal memuat (Cek Internet)</option>';
+                    return;
+                }
+                selectSurah.innerHTML = '<option value="">-- Pilih Surah --</option>' +
+                    data.map(s => '<option value="URL|' + s.audioFull['05'] + '|' + s.namaLatin + '">' + s.nomor + '. Surah ' + s.namaLatin + '</option>').join('');
+            })
+            .catch(() => {
+                selectSurah.innerHTML = '<option value="">Gagal memuat surah</option>';
+            });
+    }
+    loadSurahList();
+
+    function bukaModalEdit(id, nama, jam) {
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_nama').value = nama;
+        document.getElementById('edit_jam').value = jam;
+        document.getElementById('modalEdit').classList.remove('hidden');
+    }
+
+    function tutupModalEdit() {
+        document.getElementById('modalEdit').classList.add('hidden');
+    }
+</script>
+{% endblock %}

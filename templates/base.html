@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="light" lang="id">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>{% block title %}Announcer Pro{% endblock %}</title>
+    <script src="{{ url_for('static', filename='js/tailwind.js') }}?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: { DEFAULT: "#008453", 50: "#ecfdf5", 100: "#d1fae5", 200: "#a7f3d0", 300: "#6ee7b7", 400: "#34d399", 500: "#10b981", 600: "#059669", 700: "#008453", 800: "#065f46", 900: "#064e3b" }
+            },
+            fontFamily: {
+              headline: ["Space Grotesk", "sans-serif"],
+              body: ["Inter", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .nav-link { transition: all 0.15s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <!-- ===== SIDEBAR (Desktop) ===== -->
+    <aside class="fixed left-0 top-0 h-full z-40 hidden lg:flex flex-col bg-slate-900 w-64">
+        <div class="px-6 pt-8 pb-6 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-xl" style="font-variation-settings: 'FILL' 1;">mosque</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-headline font-bold text-white leading-tight">Announcer Pro</h1>
+                    <p class="text-[11px] text-slate-400 font-medium">Mosque Dashboard</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a href="{{ url_for('home') }}" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm {% if active_page == 'dashboard' %}bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+                <span class="material-symbols-outlined text-xl">dashboard</span>
+                Dashboard
+            </a>
+            <a href="{{ url_for('studio') }}" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm {% if active_page == 'studio' %}bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+                <span class="material-symbols-outlined text-xl">auto_awesome</span>
+                Studio AI
+            </a>
+            <a href="{{ url_for('manajemen') }}" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm {% if active_page == 'manajemen' %}bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+                <span class="material-symbols-outlined text-xl">settings_voice</span>
+                Atur Pengumuman
+            </a>
+        </nav>
+
+        <div class="px-3 py-4 border-t border-slate-800">
+            <div class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400">
+                <span class="material-symbols-outlined text-xl">account_circle</span>
+                <span class="font-medium">Admin</span>
+            </div>
+            <a href="{{ url_for('logout') }}" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white font-medium mt-1">
+                <span class="material-symbols-outlined text-xl">logout</span>
+                Keluar
+            </a>
+        </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+
+        <!-- ===== TOP NAVBAR ===== -->
+        <div class="sticky top-0 z-30 bg-white border-b border-slate-200">
+            <div class="flex items-center justify-between px-4 md:px-8 py-3">
+                <div class="flex items-center gap-3">
+                    <span id="liveClock" class="text-2xl md:text-3xl font-headline font-bold text-slate-900 tracking-tight"></span>
+                    <a href="{{ url_for('logs') }}" class="flex items-center gap-1 px-2 py-1 text-sm text-slate-400 hover:text-emerald-600 transition-colors" title="Lihat Log">
+                        <span class="material-symbols-outlined text-lg">history</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btnMixer" class="flex items-center gap-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg text-xs font-bold shadow-sm hover:shadow transition-all whitespace-nowrap border border-red-200">
+                        <span class="material-symbols-outlined text-base">power_settings_new</span>
+                        <span id="textMixer" class="hidden sm:inline">Mixer OFF</span>
+                    </button>
+                    <button id="btnStop" class="flex items-center gap-2 px-3 py-2.5 bg-red-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-red-700 transition-all whitespace-nowrap">
+                        <span class="material-symbols-outlined text-base">stop_circle</span>
+                        <span class="hidden sm:inline">Stop Audio</span>
+                    </button>
+                    <a href="{{ url_for('logout') }}" class="flex items-center justify-center w-9 h-9 text-slate-400 hover:text-red-600 transition-colors">
+                        <span class="material-symbols-outlined text-lg">logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% block content %}
+        {% endblock %}
+
+        <!-- ===== BOTTOM NAV (Mobile) ===== -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex items-center justify-around py-2 z-50 safe-area-bottom">
+            <a href="{{ url_for('home') }}" class="flex flex-col items-center gap-0.5 px-3 py-1 {% if active_page == 'dashboard' %}text-emerald-400{% else %}text-slate-400{% endif %}">
+                <span class="material-symbols-outlined text-2xl">dashboard</span>
+                <span class="text-[10px] font-bold font-headline">Dashboard</span>
+            </a>
+            <a href="{{ url_for('studio') }}" class="flex flex-col items-center gap-0.5 px-3 py-1 {% if active_page == 'studio' %}text-emerald-400{% else %}text-slate-400{% endif %}">
+                <span class="material-symbols-outlined text-2xl">auto_awesome</span>
+                <span class="text-[10px] font-bold font-headline">Studio</span>
+            </a>
+            <a href="{{ url_for('manajemen') }}" class="flex flex-col items-center gap-0.5 px-3 py-1 {% if active_page == 'manajemen' %}text-emerald-400{% else %}text-slate-400{% endif %}">
+                <span class="material-symbols-outlined text-2xl">settings_voice</span>
+                <span class="text-[10px] font-bold font-headline">Jadwal</span>
+            </a>
+            <a href="{{ url_for('logs') }}" class="flex flex-col items-center gap-0.5 px-3 py-1 {% if active_page == 'logs' %}text-emerald-400{% else %}text-slate-400{% endif %}">
+                <span class="material-symbols-outlined text-2xl">history</span>
+                <span class="text-[10px] font-bold font-headline">Logs</span>
+            </a>
+        </nav>
+    </main>
+
+    <script>
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            const el = document.getElementById('liveClock');
+            if(el) el.textContent = time;
+        }
+        updateClock();
+        setInterval(updateClock, 10000);
+
+        // Mixer button
+        const btnMixer = document.getElementById('btnMixer');
+        const textMixer = document.getElementById('textMixer');
+
+        function updateMixerUI(isOn) {
+            if(!btnMixer) return;
+            if(isOn) {
+                btnMixer.className = 'flex items-center gap-2 px-3 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold shadow-sm hover:shadow transition-all whitespace-nowrap border border-emerald-200';
+                if(textMixer) textMixer.innerText = "Mixer ON";
+            } else {
+                btnMixer.className = 'flex items-center gap-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg text-xs font-bold shadow-sm hover:shadow transition-all whitespace-nowrap border border-red-200';
+                if(textMixer) textMixer.innerText = "Mixer OFF";
+            }
+        }
+
+        fetch('/get_mixer_status')
+            .then(r => r.json())
+            .then(d => updateMixerUI(d.is_on))
+            .catch(() => {});
+
+        if(btnMixer) {
+            btnMixer.addEventListener('click', function() {
+                if(textMixer) textMixer.innerText = "Tunggu...";
+                fetch('/toggle_mixer', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(d => updateMixerUI(d.is_on))
+                    .catch(() => { if(textMixer) textMixer.innerText = "Error"; });
+            });
+        }
+
+        // Stop button (panic)
+        const btnStop = document.getElementById('btnStop');
+        if(btnStop) {
+            btnStop.addEventListener('click', function() {
+                if(!confirm('Hentikan semua audio yang sedang berbunyi di Toa Masjid?')) return;
+                const btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-base">hourglass_top</span>';
+                fetch('/stop_audio', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(d => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<span class="material-symbols-outlined text-base">stop_circle</span><span class="hidden sm:inline">Stop Audio</span>';
+                        if(typeof d.mixer_on !== 'undefined') updateMixerUI(d.mixer_on);
+                    })
+                    .catch(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<span class="material-symbols-outlined text-base">stop_circle</span><span class="hidden sm:inline">Stop Audio</span>';
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

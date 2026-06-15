@@ -1,0 +1,152 @@
+{% set active_page = 'studio' %}
+{% extends "base.html" %}
+
+{% block title %}Studio AI - Announcer Pro{% endblock %}
+
+{% block content %}
+<div class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto pb-20 md:pb-8">
+    <div class="max-w-5xl mx-auto">
+
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl md:text-3xl font-headline font-bold text-slate-900 tracking-tight">Studio Audio</h2>
+                <p class="text-sm text-slate-500 mt-1">Buat, upload, dan kelola audio pengumuman</p>
+            </div>
+        </div>
+
+        {% if pesan %}
+        <div class="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+            <span class="material-symbols-outlined text-emerald-600">check_circle</span>
+            <p class="text-emerald-800 font-bold text-sm">{{ pesan }}</p>
+        </div>
+        {% endif %}
+
+        <!-- ===== GENERATE & UPLOAD GRID ===== -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+            <!-- ===== GENERATE AI ===== -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-emerald-600">record_voice_over</span>
+                    </div>
+                    <div>
+                        <h3 class="font-headline font-bold text-slate-900">Studio AI Announcer</h3>
+                        <p class="text-xs text-slate-500">Ketik teks, AI ubah jadi suara</p>
+                    </div>
+                </div>
+
+                <form action="/proses_suara" method="POST" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-headline">Nama Audio</label>
+                        <input type="text" name="nama_audio" placeholder="Contoh: Pengumuman Sholat Jumat"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300" required>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-end mb-1.5">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-headline">Teks Pengumuman</label>
+                            <span class="text-[10px] text-slate-400 font-medium">Auto-generate .mp3</span>
+                        </div>
+                        <textarea name="teks_pengumuman" rows="4" placeholder="Contoh: Assalamu'alaikum warahmatullahi wabarakatuh. Waktu sholat Dzuhur akan masuk dalam 5 menit lagi..."
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all resize-none placeholder:text-slate-300" required></textarea>
+                    </div>
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-emerald-700 hover:shadow-md transition-all active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-lg">play_circle</span>
+                        Generate & Simpan
+                    </button>
+                </form>
+            </div>
+
+            <!-- ===== UPLOAD MANUAL ===== -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-slate-600">upload_file</span>
+                    </div>
+                    <div>
+                        <h3 class="font-headline font-bold text-slate-900">Upload Suara Manual</h3>
+                        <p class="text-xs text-slate-500">Rekaman sendiri? Upload MP3 di sini</p>
+                    </div>
+                </div>
+
+                <form action="/upload_audio" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    <div class="p-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-3 font-headline">Pilih File (MP3/WAV/OGG)</label>
+                        <input type="file" name="file_audio" accept=".mp3, .wav, .ogg"
+                            class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" required>
+                    </div>
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-700 text-white rounded-lg font-bold text-sm shadow-sm hover:bg-slate-800 hover:shadow-md transition-all active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-lg">cloud_upload</span>
+                        Upload & Simpan
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== PUSTAKA AUDIO ===== -->
+        <section class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100">
+                <h3 class="font-headline font-bold text-lg text-slate-900">Pustaka Audio</h3>
+                <p class="text-sm text-slate-500">Semua audio yang tersedia untuk jadwal</p>
+            </div>
+
+            <div id="playerContainer" class="hidden mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <p class="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wider font-headline">Preview (Browser)</p>
+                <audio id="playerWeb" controls class="w-full h-10 outline-none"></audio>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+                {% for audio in daftar_audio %}
+                <div class="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-center gap-4 min-w-0 flex-1">
+                        <span class="material-symbols-outlined text-emerald-600 shrink-0" style="font-variation-settings: 'FILL' 1;">music_note</span>
+                        <div class="min-w-0">
+                            <p class="font-medium text-slate-900 text-sm truncate">{{ audio.nama_file }}</p>
+                            <p class="text-xs text-slate-500 truncate">"{{ audio.teks }}"</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0 ml-4">
+                        <button type="button" onclick="putarDiWeb('{{ audio.nama_file }}')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Preview di browser">
+                            <span class="material-symbols-outlined text-lg">play_circle</span>
+                        </button>
+                        <a href="{{ url_for('hapus_audio', id=audio.id) }}" onclick="return confirm('Yakin ingin menghapus audio ini secara permanen?')" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Hapus">
+                            <span class="material-symbols-outlined text-lg">delete</span>
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="px-6 py-10 text-center">
+                    <span class="material-symbols-outlined text-4xl text-slate-300 mb-3">library_music</span>
+                    <p class="text-sm text-slate-400 italic">Belum ada audio. Generate atau upload sekarang.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="mt-6 text-center">
+            <p class="text-xs text-slate-400 font-medium">
+                Tip: Gunakan tanda baca (titik, koma) yang tepat agar intonasi AI natural.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const playerContainer = document.getElementById('playerContainer');
+    const playerWeb = document.getElementById('playerWeb');
+
+    function putarDiWeb(namaFile) {
+        playerContainer.classList.remove('hidden');
+        playerWeb.src = "/suara/" + namaFile;
+        playerWeb.play();
+    }
+
+    const fileBaru = "{{ file_baru }}";
+    if (fileBaru && fileBaru !== "None") {
+        window.onload = function() {
+            putarDiWeb(fileBaru);
+        };
+    }
+</script>
+{% endblock %}
