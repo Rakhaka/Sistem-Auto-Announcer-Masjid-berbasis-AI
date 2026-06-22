@@ -1,6 +1,6 @@
 import time
 import requests
-from config import ALADHAN_API_URL, EQURAN_API_URL, AUDIO_CACHE_TTL, SURAH_CACHE_TTL
+from app.config import ALADHAN_API_URL, EQURAN_API_URL, AUDIO_CACHE_TTL, SURAH_CACHE_TTL
 
 _api_cache = {}
 

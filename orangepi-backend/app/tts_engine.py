@@ -1,6 +1,5 @@
 import requests
-from config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, ELEVENLABS_MODEL, EDGE_TTS_VOICE
-
+from app.config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, ELEVENLABS_MODEL, EDGE_TTS_VOICE
 
 def buat_suara_edge(teks, path_file):
     import asyncio
@@ -8,7 +7,6 @@ def buat_suara_edge(teks, path_file):
     suara = EDGE_TTS_VOICE
     communicate = edge_tts.Communicate(teks, suara)
     asyncio.run(communicate.save(path_file))
-
 
 def buat_suara_elevenlabs(teks, path_file):
     print(f"\n[AI] Mengirim teks ke ElevenLabs: {teks[:20]}...")

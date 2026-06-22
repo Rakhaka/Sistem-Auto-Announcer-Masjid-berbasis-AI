@@ -1,0 +1,19 @@
+[Unit]
+Description=Announcer Backend API — Orange Pi
+After=network.target network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=orangepi
+Group=orangepi
+WorkingDirectory=/home/orangepi/announcer-backend
+EnvironmentFile=/home/orangepi/announcer-backend/.env
+ExecStart=/home/orangepi/announcer-backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 5000
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -3,7 +3,7 @@ import vlc
 import time
 import threading
 from datetime import datetime, timedelta
-from config import PIN_RELAY, AUDIO_DIR
+from app.config import PIN_RELAY, AUDIO_DIR
 try:
     import OPi.GPIO as GPIO
     import orangepi.pi3
@@ -77,7 +77,7 @@ def batalkan_timer_auto_off():
 def matikan_mixer_aman_otomatis():
     print("\n[SISTEM] Waktu Auto-Off 30 menit tiba. Mematikan Mixer otomatis...")
     matikan_mixer_aman()
-    from database import catat_log
+    from app.database import catat_log
     catat_log("sistem", "Mixer Otomatis Mati", "Timer 30 menit setelah jadwal selesai.", "System")
 
 def stop_audio():
@@ -104,7 +104,6 @@ def play_audio_with_delay(media_source, delay=3):
         media = vlc.Media(media_source)
     else:
         media = media_source
-
     player_masjid.set_media(media)
     player_masjid.audio_set_volume(100)
 

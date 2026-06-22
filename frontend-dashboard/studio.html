@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="light" lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio AI - Announcer Pro</title>
+    <script src="js/tailwind.js?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: { extend: { colors: { primary: { DEFAULT: "#008453", 50: "#ecfdf5", 100: "#d1fae5", 200: "#a7f3d0", 300: "#6ee7b7", 400: "#34d399", 500: "#10b981", 600: "#059669", 700: "#008453", 800: "#065f46", 900: "#064e3b" } }, fontFamily: { headline: ["Space Grotesk", "sans-serif"], body: ["Inter", "sans-serif"] } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1,h2,h3,h4,h5,h6,.font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .nav-link { transition: all 0.15s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+    <aside class="fixed left-0 top-0 h-full z-40 hidden lg:flex flex-col bg-slate-900 w-64">
+        <div class="px-6 pt-8 pb-6 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center"><span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL'1">mosque</span></div>
+                <div><h1 class="text-lg font-headline font-bold text-white leading-tight">Announcer Pro</h1><p class="text-[11px] text-slate-400 font-medium">Mosque Dashboard</p></div>
+            </div>
+        </div>
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a href="index.html" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white"><span class="material-symbols-outlined text-xl">dashboard</span> Dashboard</a>
+            <a href="studio.html" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm bg-emerald-600/20 text-emerald-400 border-l-2 border-emerald-500"><span class="material-symbols-outlined text-xl">auto_awesome</span> Studio AI</a>
+            <a href="manajemen.html" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white"><span class="material-symbols-outlined text-xl">settings_voice</span> Atur Pengumuman</a>
+        </nav>
+        <div class="px-3 py-4 border-t border-slate-800">
+            <div class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400"><span class="material-symbols-outlined text-xl">account_circle</span><span class="font-medium">Admin</span></div>
+            <a href="#" onclick="logout()" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white font-medium mt-1"><span class="material-symbols-outlined text-xl">logout</span> Keluar</a>
+        </div>
+    </aside>
+
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <div class="sticky top-0 z-30 bg-white border-b border-slate-200">
+            <div class="flex items-center justify-between px-4 md:px-8 py-3">
+                <div class="flex items-center gap-3"><span id="liveClock" class="text-2xl md:text-3xl font-headline font-bold text-slate-900 tracking-tight"></span></div>
+                <div class="flex items-center gap-2">
+                    <a href="#" onclick="logout()" class="flex items-center justify-center w-9 h-9 text-slate-400 hover:text-red-600 transition-colors"><span class="material-symbols-outlined text-lg">logout</span></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto pb-20 md:pb-8">
+            <div id="notif" class="hidden p-4 rounded-xl border text-sm font-bold"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <h3 class="font-headline font-bold text-lg text-slate-900 mb-1">Generate Audio AI</h3>
+                    <p class="text-sm text-slate-500 mb-6">Teks akan diubah menjadi suara natural oleh ElevenLabs</p>
+                    <form id="formGenerate" onsubmit="return generateAudio(event)">
+                        <div class="mb-4">
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Nama Audio</label>
+                            <input type="text" id="namaAudio" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" placeholder="Contoh: Pengumuman Jumat" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Teks Pengumuman</label>
+                            <textarea id="teksPengumuman" rows="4" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none" placeholder="Tulis teks pengumuman di sini..." required></textarea>
+                        </div>
+                        <button type="submit" id="btnGenerate" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm">Generate & Simpan</button>
+                    </form>
+                </section>
+
+                <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <h3 class="font-headline font-bold text-lg text-slate-900 mb-1">Upload Audio</h3>
+                    <p class="text-sm text-slate-500 mb-6">Unggah rekaman sendiri (MP3/WAV/OGG)</p>
+                    <form id="formUpload" onsubmit="return uploadAudio(event)">
+                        <div class="mb-4">
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Pilih File</label>
+                            <input type="file" id="fileAudio" accept=".mp3,.wav,.ogg" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" required>
+                        </div>
+                        <button type="submit" id="btnUpload" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm">Upload</button>
+                    </form>
+                </section>
+            </div>
+
+            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-100">
+                    <h3 class="font-headline font-bold text-lg text-slate-900">Pustaka Audio</h3>
+                    <p class="text-sm text-slate-500">Semua audio yang tersedia</p>
+                </div>
+                <div class="divide-y divide-slate-100" id="audioList">
+                    <div class="p-4 md:p-5 text-center text-sm text-slate-400">Memuat...</div>
+                </div>
+            </section>
+        </div>
+
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex items-center justify-around py-2 z-50">
+            <a href="index.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400"><span class="material-symbols-outlined text-2xl">dashboard</span><span class="text-[10px] font-bold font-headline">Dashboard</span></a>
+            <a href="studio.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-emerald-400"><span class="material-symbols-outlined text-2xl">auto_awesome</span><span class="text-[10px] font-bold font-headline">Studio</span></a>
+            <a href="manajemen.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400"><span class="material-symbols-outlined text-2xl">settings_voice</span><span class="text-[10px] font-bold font-headline">Jadwal</span></a>
+            <a href="logs.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400"><span class="material-symbols-outlined text-2xl">history</span><span class="text-[10px] font-bold font-headline">Logs</span></a>
+        </nav>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        if (!isLoggedIn()) window.location.href = 'login.html';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAudioList();
+            updateClock();
+            setInterval(updateClock, 10000);
+        });
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveClock').textContent =
+                String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        }
+
+        function showNotif(msg, type) {
+            const el = document.getElementById('notif');
+            el.textContent = msg;
+            el.className = 'p-4 rounded-xl border text-sm font-bold ' + (type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700');
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+        function renderAudioList(list) {
+            const container = document.getElementById('audioList');
+            if (!list.length) {
+                container.innerHTML = '<div class="p-4 md:p-5 text-center text-sm text-slate-400">Belum ada audio</div>';
+                return;
+            }
+            container.innerHTML = list.map(a =>
+                `<div class="flex items-center gap-4 p-4 md:p-5 hover:bg-slate-50 transition-colors">
+                    <div class="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center shrink-0 hidden md:flex">
+                        <span class="material-symbols-outlined text-teal-600 text-lg" style="font-variation-settings:'FILL'1">music_note</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-slate-900 text-sm">${a.nama_file}</p>
+                        <p class="text-sm text-slate-500 truncate">${a.teks}</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="previewAudio('${a.nama_file}')" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Preview">
+                            <span class="material-symbols-outlined text-lg">play_circle</span>
+                        </button>
+                        <button onclick="hapusAudio(${a.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                            <span class="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                    </div>
+                </div>`
+            ).join('');
+        }
+
+        function loadAudioList() {
+            apiGetWithCacheRefresh('/api/audio-list', renderAudioList, 30000);
+        }
+
+        function previewAudio(filename) {
+            const existing = document.querySelector('audio[data-preview]');
+            if (existing) existing.remove();
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.autoplay = true;
+            audio.dataset.preview = '1';
+            audio.className = 'fixed bottom-20 right-4 z-50 shadow-lg rounded-lg';
+            audio.innerHTML = `<source src="/api/audio/${filename}" type="audio/mpeg">`;
+            document.body.appendChild(audio);
+        }
+
+        async function generateAudio(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true;
+            btn.textContent = 'Memproses...';
+            try {
+                const nama = document.getElementById('namaAudio').value;
+                const teks = document.getElementById('teksPengumuman').value;
+                const res = await apiPost('/api/proses-suara', { nama_audio: nama, teks: teks });
+                showNotif(res.message, 'success');
+                document.getElementById('formGenerate').reset();
+                loadAudioList();
+            } catch (err) {
+                showNotif(err.message, 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Generate & Simpan';
+        }
+
+        async function uploadAudio(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnUpload');
+            btn.disabled = true;
+            btn.textContent = 'Mengupload...';
+            try {
+                const file = document.getElementById('fileAudio').files[0];
+                if (!file) { showNotif('Pilih file terlebih dahulu', 'error'); btn.disabled = false; btn.textContent = 'Upload'; return; }
+                const res = await uploadFile('/api/upload-audio', file);
+                showNotif(res.message, 'success');
+                document.getElementById('formUpload').reset();
+                loadAudioList();
+            } catch (err) {
+                showNotif(err.message, 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Upload';
+        }
+
+        async function hapusAudio(id) {
+            if (!confirm('Hapus audio ini?')) return;
+            try {
+                await apiDelete(`/api/audio/${id}`);
+                showNotif('Audio berhasil dihapus', 'success');
+                loadAudioList();
+            } catch (err) {
+                showNotif(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

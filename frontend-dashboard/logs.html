@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html class="light" lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Sistem - Announcer Pro</title>
+    <script src="js/tailwind.js?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: { extend: { colors: { primary: { DEFAULT: "#008453", 50: "#ecfdf5", 100: "#d1fae5", 200: "#a7f3d0", 300: "#6ee7b7", 400: "#34d399", 500: "#10b981", 600: "#059669", 700: "#008453", 800: "#065f46", 900: "#064e3b" } }, fontFamily: { headline: ["Space Grotesk", "sans-serif"], body: ["Inter", "sans-serif"] } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1,h2,h3,h4,h5,h6,.font-headline { font-family: 'Space Grotesk', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .nav-link { transition: all 0.15s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+    <aside class="fixed left-0 top-0 h-full z-40 hidden lg:flex flex-col bg-slate-900 w-64">
+        <div class="px-6 pt-8 pb-6 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center"><span class="material-symbols-outlined text-white text-xl" style="font-variation-settings:'FILL'1">mosque</span></div>
+                <div><h1 class="text-lg font-headline font-bold text-white leading-tight">Announcer Pro</h1><p class="text-[11px] text-slate-400 font-medium">Mosque Dashboard</p></div>
+            </div>
+        </div>
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a href="index.html" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white"><span class="material-symbols-outlined text-xl">dashboard</span> Dashboard</a>
+            <a href="studio.html" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white"><span class="material-symbols-outlined text-xl">auto_awesome</span> Studio AI</a>
+            <a href="manajemen.html" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-slate-300 hover:bg-slate-800 hover:text-white"><span class="material-symbols-outlined text-xl">settings_voice</span> Atur Pengumuman</a>
+        </nav>
+        <div class="px-3 py-4 border-t border-slate-800">
+            <div class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-400"><span class="material-symbols-outlined text-xl">account_circle</span><span class="font-medium">Admin</span></div>
+            <a href="#" onclick="logout()" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white font-medium mt-1"><span class="material-symbols-outlined text-xl">logout</span> Keluar</a>
+        </div>
+    </aside>
+
+    <main class="lg:ml-64 min-h-screen flex flex-col">
+        <div class="sticky top-0 z-30 bg-white border-b border-slate-200">
+            <div class="flex items-center justify-between px-4 md:px-8 py-3">
+                <div class="flex items-center gap-3"><span id="liveClock" class="text-2xl md:text-3xl font-headline font-bold text-slate-900 tracking-tight"></span></div>
+                <div class="flex items-center gap-2">
+                    <a href="#" onclick="logout()" class="flex items-center justify-center w-9 h-9 text-slate-400 hover:text-red-600 transition-colors"><span class="material-symbols-outlined text-lg">logout</span></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 p-4 md:p-8 space-y-6 overflow-y-auto pb-20 md:pb-8">
+            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-headline font-bold text-lg text-slate-900">Riwayat Aktivitas</h3>
+                        <p class="text-sm text-slate-500" id="logDate"></p>
+                    </div>
+                    <button onclick="loadLogs()" class="p-2 text-slate-400 hover:text-emerald-600 transition-colors" title="Refresh">
+                        <span class="material-symbols-outlined text-lg">refresh</span>
+                    </button>
+                </div>
+                <div class="divide-y divide-slate-100" id="logList">
+                    <div class="p-4 md:p-5 text-center text-sm text-slate-400">Memuat...</div>
+                </div>
+            </section>
+        </div>
+
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex items-center justify-around py-2 z-50">
+            <a href="index.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400"><span class="material-symbols-outlined text-2xl">dashboard</span><span class="text-[10px] font-bold font-headline">Dashboard</span></a>
+            <a href="studio.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400"><span class="material-symbols-outlined text-2xl">auto_awesome</span><span class="text-[10px] font-bold font-headline">Studio</span></a>
+            <a href="manajemen.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400"><span class="material-symbols-outlined text-2xl">settings_voice</span><span class="text-[10px] font-bold font-headline">Jadwal</span></a>
+            <a href="logs.html" class="flex flex-col items-center gap-0.5 px-3 py-1 text-emerald-400"><span class="material-symbols-outlined text-2xl">history</span><span class="text-[10px] font-bold font-headline">Logs</span></a>
+        </nav>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        if (!isLoggedIn()) window.location.href = 'login.html';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            document.getElementById('logDate').textContent =
+                now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            loadLogs();
+            updateClock();
+            setInterval(updateClock, 10000);
+        });
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveClock').textContent =
+                String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('logList');
+            if (!logs.length) {
+                container.innerHTML = '<div class="p-4 md:p-5 text-center text-sm text-slate-400">Belum ada log</div>';
+                return;
+            }
+            const icons = { murottal: 'play_circle', jadwal: 'campaign', ai: 'auto_fix_high', sistem: 'settings_power' };
+            const colors = { murottal: 'emerald', jadwal: 'purple', ai: 'teal', sistem: 'slate' };
+            container.innerHTML = logs.map(log => {
+                const ic = icons[log.kategori] || 'settings_power';
+                const cl = colors[log.kategori] || 'slate';
+                return `<div class="flex items-center gap-4 p-4 md:p-5 hover:bg-slate-50 transition-colors">
+                    <div class="w-10 h-10 bg-${cl}-50 rounded-lg flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-${cl}-600 text-lg" style="font-variation-settings:'FILL'1">${ic}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-slate-900 text-sm">${log.pesan}</p>
+                        <p class="text-sm text-slate-500">${log.detail}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-xs font-bold text-slate-400">${log.jam}</p>
+                        <p class="text-[10px] text-slate-400">${log.tanggal}</p>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase mt-0.5 font-headline">${log.status}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function loadLogs() {
+            apiGetWithCacheRefresh('/api/logs', renderLogs, 30000);
+        }
+    </script>
+</body>
+</html>

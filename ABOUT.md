@@ -1,106 +1,186 @@
 # Announcer Pro
 
-**Sistem Kontrol Audio Masjid Otomatis berbasis Web**
+**Sistem Kontrol Audio Masjid Otomatis — Arsitektur Frontend/Backend Terpisah**
 
-Announcer Pro adalah sistem dashboard web untuk mengontrol audio masjid secara terpusat. Dibangun untuk berjalan di **Orange Pi 3 LTS** (ARM), sistem ini menggantikan perangkat keras manual (amplifier, pemutar MP3, timer) dengan satu antarmuka web modern yang dapat diakses dari HP/laptop.
-
----
-
-## Fitur Utama
-
-### 1. Dashboard Real-time
-- **Jadwal Sholat** — ditampilkan dalam 5 kartu (Subuh, Dzuhur, Ashar, Maghrib, Isya) dengan highlight waktu aktif. Data dari API Aladhan, di-cache 6 jam agar tidak lemot.
-- **Murottal Control** — putar streaming Surah dari EQuran (Syekh Mishary Rasyid) langsung ke speaker masjid. Tombol Play/Pause toggle, volume slider.
-- **Mixer ON/OFF** — kontrol relay GPIO untuk menyalakan/mematikan mixer audio masjid. Timer auto-off 30 menit.
-- **Stop Audio (Panic)** — hentikan semua audio yang sedang berbunyi di toa masjid.
-- **Aktivitas Terkini** — log 3 kejadian terakhir, auto-refresh tiap 30 detik via AJAX.
-- **Navigation Shortcuts** — akses cepat ke Studio AI dan Atur Pengumuman.
-
-### 2. Studio AI
-- **Generate Audio** — ketik teks pengumuman, AI ElevenLabs ubah jadi suara natural berbahasa Indonesia (model `eleven_multilingual_v2`). Auto-generate file `.mp3`.
-- **Upload Manual** — unggah rekaman sendiri (MP3/WAV/OGG) untuk digabungkan ke pustaka.
-- **Pustaka Audio** — daftar semua audio yang tersedia, lengkap dengan preview play di browser (tidak masuk mixer masjid).
-- **Voice Fallback** — jika ElevenLabs gagal, sistem siap menggunakan `edge-tts` (gratis, offline-compatible).
-
-### 3. Atur Pengumuman (Scheduler)
-- **Buat Jadwal Baru** — tentukan nama, pilih audio (dari pustaka atau streaming surah), set waktu putar.
-- **Daftar Jadwal** — tabel semua jadwal dengan toggle aktif/nonaktif, edit, dan hapus.
-- **Eksekusi Otomatis** — APScheduler mengecek setiap menit (`cron minute="*"`). Saat waktu tiba: mixer dinyalakan, audio diputar setelah delay 3 detik (hindari jegleg), timer auto-off 30 menit.
-
-### 4. Log Sistem
-- Riwayat lengkap semua aktivitas: murottal, jadwal, generate AI, sistem.
-- Filter visual dengan ikon per kategori.
-
-### 5. Keamanan
-- Login session (`admin/password`).
-- Semua route diproteksi decorator `@login_required`.
-- Secret key untuk session Flask.
+Announcer Pro adalah sistem dashboard web untuk mengontrol audio masjid secara terpusat. Sistem ini telah di-**refactor dari arsitektur monolitik menjadi Frontend + Backend terpisah** sehingga lebih fleksibel, aman, dan bisa diakses dari domain publik tanpa membuka Orange Pi ke internet.
 
 ---
 
 ## Arsitektur Sistem
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                        Web Browser                           │
-│            (HP/Laptop Admin — Tailwind CSS + AJAX)           │
-└─────────────────────────┬────────────────────────────────────┘
-                          │ HTTP
-┌─────────────────────────▼────────────────────────────────────┐
-│                    Waitress WSGI Server                       │
-│                     (Multi-threaded)                          │
-│                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐ │
-│  │ app.py   │  │ auth.py  │  │ config.py│  │ database.py  │ │
-│  │ (routes) │  │ (login)  │  │ (setting)│  │ (SQLite CRUD)│ │
-│  └────┬─────┘  └──────────┘  └──────────┘  └──────┬───────┘ │
-│       │                                           │         │
-│  ┌────▼───────────────────────────────────────────▼───────┐ │
-│  │              Modular Services Layer                     │ │
-│  │                                                         │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │ │
-│  │  │audio_player  │  │tts_engine    │  │api_service   │  │ │
-│  │  │(VLC + GPIO)  │  │(ElevenLabs)  │  │(Aladhan+     │  │ │
-│  │  │              │  │              │  │ EQuran)      │  │ │
-│  │  └──────┬───────┘  └──────────────┘  └──────────────┘  │ │
-│  │         │                                               │ │
-│  │  ┌──────▼───────┐                                       │ │
-│  │  │scheduler     │                                       │ │
-│  │  │(APScheduler) │                                       │ │
-│  │  └──────────────┘                                       │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
-         │                              │
-         ▼                              ▼
-  ┌────────────┐               ┌────────────────┐
-  │ VLC Media  │               │  GPIO Relay    │
-  │ Player     │──────────────►│  (Pin 7)       │
-  │ (Output    │               │  ─► Mixer ON/OFF│
-  │  ke mixer) │               └────────────────┘
-  └────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Browser (HP/Laptop)                           │
+│                    https://domain-anda.com/dashboard                     │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │ HTTPS
+┌────────────────────────────────▼────────────────────────────────────────┐
+│                        Cloudflare Tunnel                                  │
+│                    (Security, SSL, DDoS Protection)                       │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │ Internal Network
+┌────────────────────────────────▼────────────────────────────────────────┐
+│                          Nginx — Lab Server                               │
+│                                                                          │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────┐  │
+│  │   Static Files      │  │  /api/* Proxy        │  │ /suara/* Proxy │  │
+│  │   (HTML, JS, CSS)   │  │  ─► Tailscale ─►     │  │ ─► Tailscale   │  │
+│  │   Served langsung    │  │  Orange Pi :5000     │  │ Orange Pi :5000│  │
+│  └─────────────────────┘  └─────────────────────┘  └─────────────────┘  │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │ Tailscale VPN (WireGuard)
+┌────────────────────────────────▼────────────────────────────────────────┐
+│                        Orange Pi 3 LTS (Masjid)                          │
+│                                                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                    Backend API Server (:5000)                     │   │
+│  │                                                                  │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────────┐   │   │
+│  │  │ auth.py  │  │config.py │  │database  │  │ api_service    │   │   │
+│  │  │ (JWT)    │  │(.env)    │  │ (SQLite) │  │ (Aladhan,      │   │   │
+│  │  │          │  │          │  │          │  │  EQuran)       │   │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └────────────────┘   │   │
+│  │                                                                  │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐     │   │
+│  │  │audio_player  │  │tts_engine    │  │scheduler_service   │     │   │
+│  │  │(VLC + GPIO)  │  │(ElevenLabs)  │  │(APScheduler)       │     │   │
+│  │  └──────┬───────┘  └──────────────┘  └────────────────────┘     │   │
+│  └─────────┼────────────────────────────────────────────────────────┘   │
+│            │                                                            │
+│            ▼                                                            │
+│     ┌────────────┐          ┌────────────────┐                         │
+│     │ VLC Media  │          │  GPIO Relay    │                         │
+│     │ Player     │─────────►│  (Pin 7)       │                         │
+│     │ (Output    │          │  ─► Mixer ON/OFF│                         │
+│     │  ke mixer) │          └────────────────┘                         │
+│     └────────────┘                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Alur Kerja
+---
 
-### Play Murottal Manual
-1. Admin pilih surah → klik Play.
-2. Backend: `nyalakan_mixer_aman(mode="auto")` → GPIO HIGH (mixer ON).
-3. Set timer auto-off 30 menit via APScheduler.
-4. Thread terpisah: tunggu 3 detik → `player_masjid.play()` (hindari jegleg).
-5. Response JSON `{playing: true, mixer_on: true}` → JS update UI.
+## Alur Data
 
-### Jadwal Otomatis
-1. Scheduler `cek_jadwal()` jalan setiap menit.
-2. Query `get_active_schedules_by_time(waktu_sekarang)`.
-3. Jika cocok: `nyalakan_mixer_aman(mode="auto")` + `play_audio_with_delay(file, delay=3)`.
-4. Timer auto-off 30 menit.
-5. Log dicatat ke database.
+### Request dari Dashboard (contoh: Putar Pengumuman)
 
-### Generate Audio AI
-1. Admin ketik teks → submit form `/proses_suara`.
-2. Backend panggil ElevenLabs TTS API → simpan `.mp3` ke `suara_tersimpan/`.
-3. `insert_audio()` ke database, catat log.
-4. Redirect ke Studio UI → auto-play preview di browser (HTML5 `<audio>`, TIDAK lewat VLC/mixer).
+1. User klik "Putar" di dashboard → JavaScript panggil `POST /api/announce`
+2. Browser kirim request ke **domain publik** (`https://announcer.domain.com/api/announce`) dengan header `Authorization: Bearer <token>`
+3. Cloudflare Tunnel terima request → forward ke **Lab Server**
+4. Nginx cocokkan pattern `/api/*` → **proxy_pass** ke `http://100.x.x.x:5000/api/announce` via **Tailscale**
+5. **Orange Pi Backend** terima request:
+   - Validasi JWT token
+   - Jika tipe `text`: panggil ElevenLabs TTS → simpan `.mp3`
+   - Nyalakan relay mixer (GPIO)
+   - Putar audio via VLC dengan delay 3 detik
+   - Catat log ke SQLite
+   - Return JSON `{ success: true, jobId: "ann-001" }`
+6. Response balik lewat jalur yang sama → browser update UI
+
+### Keamanan
+- **Orange Pi tidak punya IP publik** — hanya di dalam Tailscale
+- **Tidak perlu port forwarding** — semua koneksi inbound dari Lab Server via Tailscale
+- **Autentikasi JWT** — setiap request API diverifikasi signature token
+- **Domain publik** hanya指向 Lab Server, bukan Orange Pi
+- **Cloudflare Tunnel** — SSL, DDoS protection, hide origin server
+
+---
+
+## Perubahan dari Versi Monolitik
+
+| Aspek | Sebelum (Monolit) | Sesudah (Frontend + Backend) |
+|-------|-------------------|------------------------------|
+| **Server** | Satu Flask serve semuanya | Backend API terpisah, Frontend static |
+| **Auth** | Flask session (cookie) | JWT token (stateless) |
+| **Frontend** | Jinja2 SSR (server-side render) | SPA static (HTML + JS fetch API) |
+| **Deploy Frontend** | Di Orange Pi | Di Lab Server (domain publik) |
+| **Deploy Backend** | Di Orange Pi | Tetap di Orange Pi |
+| **Akses** | IP Orange Pi langsung | Domain publik → Cloudflare → Lab Server → Tailscale → Orange Pi |
+| **CORS** | Same-origin (tidak masalah) | Frontend domain berbeda → backend perlu CORS |
+| **Database** | SQLite di Orange Pi | Tetap SQLite di Orange Pi (via API) |
+| **Audio files** | Di Orange Pi | Tetap di Orange Pi (proxy via Nginx) |
+
+---
+
+## Struktur File (Final)
+
+```
+announcer-project/
+├── orangepi-backend/             # Backend API — di-deploy ke Orange Pi
+│   ├── app/
+│   │   ├── main.py               # Entry point FastAPI
+│   │   ├── config.py             # Konfigurasi dari .env
+│   │   ├── auth.py               # JWT authentication
+│   │   ├── database.py           # SQLite CRUD operations
+│   │   ├── audio_player.py       # VLC player + GPIO relay
+│   │   ├── tts_engine.py         # ElevenLabs + edge-tts
+│   │   ├── api_service.py        # Aladhan + EQuran API
+│   │   ├── scheduler_service.py  # APScheduler
+│   │   └── routers/
+│   │       ├── health.py
+│   │       ├── status.py
+│   │       ├── announce.py
+│   │       ├── playback.py
+│   │       ├── studio.py
+│   │       ├── schedules.py
+│   │       ├── logs.py
+│   │       └── audio.py
+│   ├── suara_tersimpan/          # Audio files (.mp3, .wav, .ogg)
+│   ├── requirements.txt
+│   ├── .env
+│   └── announcer-api.service     # Systemd (auto-start)
+│
+├── frontend-dashboard/           # Frontend static — di-deploy ke Lab Server
+│   ├── index.html                # Dashboard utama
+│   ├── login.html                # Login dengan JWT
+│   ├── studio.html               # Studio AI
+│   ├── manajemen.html            # Manajemen jadwal
+│   ├── logs.html                 # Log sistem
+│   ├── js/
+│   │   ├── tailwind.js
+│   │   ├── api.js                # Fetch wrapper dengan JWT
+│   │   └── auth.js               # Login/logout/token
+│   └── assets/
+│
+├── docs/
+│   └── API.md                    # Dokumentasi endpoint
+│
+├── .env.example
+├── IMPLEMENTATION_PLAN.md
+└── README.md
+```
+
+---
+
+## Fitur Utama
+
+### 1. Dashboard Real-time
+- **Jadwal Sholat** — 5 kartu (Subuh, Dzuhur, Ashar, Maghrib, Isya) dengan highlight waktu aktif. Data dari API Aladhan, di-cache 6 jam.
+- **Murottal Control** — putar streaming Surah dari EQuran (Syekh Mishary Rasyid) langsung ke speaker masjid. Tombol Play/Pause toggle, volume slider.
+- **Mixer ON/OFF** — kontrol relay GPIO untuk menyalakan/mematikan mixer audio. Timer auto-off 30 menit.
+- **Stop Audio (Panic)** — hentikan semua audio yang sedang berbunyi.
+- **Aktivitas Terkini** — log 3 kejadian terakhir, auto-refresh tiap 30 detik.
+- **Navigation Shortcuts** — akses cepat ke Studio AI dan Atur Pengumuman.
+
+### 2. Studio AI
+- **Generate Audio** — ketik teks, AI ElevenLabs ubah jadi suara natural Indonesia.
+- **Upload Manual** — unggah rekaman sendiri (MP3/WAV/OGG).
+- **Pustaka Audio** — daftar semua audio, preview play di browser.
+- **Voice Fallback** — edge-tts (gratis, offline-compatible) jika ElevenLabs gagal.
+
+### 3. Atur Pengumuman (Scheduler)
+- **Buat Jadwal Baru** — nama, pilih audio, set waktu putar.
+- **Daftar Jadwal** — tabel dengan toggle aktif/nonaktif, edit, hapus.
+- **Eksekusi Otomatis** — APScheduler cek tiap menit. Saat waktu tiba: mixer ON → delay 3 detik → play audio → auto-off 30 menit.
+
+### 4. Log Sistem
+- Riwayat lengkap semua aktivitas: murottal, jadwal, generate AI, sistem.
+- Filter visual per kategori.
+
+### 5. Keamanan (JWT)
+- Login via API → dapat JWT token.
+- Setiap request API wajib sertakan `Authorization: Bearer <token>`.
+- Token expire 24 jam.
+- Backend hanya bisa diakses via Tailscale.
 
 ---
 
@@ -108,12 +188,14 @@ Announcer Pro adalah sistem dashboard web untuk mengontrol audio masjid secara t
 
 | Komponen | Teknologi |
 |----------|-----------|
-| **Backend** | Python 3.9+, Flask 3.0 |
-| **Frontend** | Tailwind CSS (lokal), Space Grotesk + Inter fonts |
-| **WSGI Server** | Waitress 3.0 (multi-threaded) |
+| **Backend API** | Python 3.9+, FastAPI |
+| **Frontend** | HTML + Tailwind CSS + Vanilla JS |
+| **Web Server (Frontend)** | Nginx (Lab Server) |
+| **Tunnel** | Cloudflare Tunnel |
+| **VPN** | Tailscale (WireGuard) |
 | **Database** | SQLite 3 |
 | **Audio Player** | python-vlc 3.0 |
-| **TTS Engine** | ElevenLabs API (plus edge-tts cadangan) |
+| **TTS Engine** | ElevenLabs API + edge-tts cadangan |
 | **External API** | Aladhan (jadwal sholat), EQuran (daftar surah) |
 | **Scheduler** | APScheduler 3.10 |
 | **GPIO** | OPi.GPIO (Orange Pi) |
@@ -121,194 +203,164 @@ Announcer Pro adalah sistem dashboard web untuk mengontrol audio masjid secara t
 
 ---
 
-## Struktur File
+## Cara Deploy
 
-```
-announcer_pro/
-├── run.py                 # Entry point: init DB, start scheduler, serve via Waitress
-├── app.py                 # Route handlers (Flask) — ~322 baris
-├── config.py              # Semua konstanta (API key, PIN relay, path, credentials)
-├── database.py            # Operasi SQLite (CRUD audio, jadwal, logs)
-├── audio_player.py        # VLC player, mixer relay, delayed play, volume
-├── tts_engine.py          # ElevenLabs text-to-speech API
-├── api_service.py         # API Aladhan + EQuran dengan caching in-memory
-├── scheduler_service.py   # APScheduler, cek jadwal tiap menit
-├── auth.py                # Decorator @login_required
-├── requirements.txt       # Dependencies Python
-├── announcer-pro.service  # Systemd service (auto-start di Orange Pi)
-├── ABOUT.md               # Dokumentasi ini
-├── masjid.db              # Database SQLite (auto-generated)
-├── suara_tersimpan/       # Folder audio files (.mp3, .wav, .ogg)
-├── static/
-│   └── js/
-│       └── tailwind.js    # Tailwind CSS lokal (~407KB)
-└── templates/
-    ├── base.html          # Layout utama (sidebar dark, topnav, bottom nav mobile)
-    ├── dashboard.html     # Halaman utama: jadwal sholat, murottal, logs
-    ├── studio.html        # Studio AI: generate, upload, pustaka audio
-    ├── manajemen.html     # CRUD jadwal pengumuman
-    ├── login.html         # Halaman login
-    └── logs.html          # Riwayat aktivitas sistem
-```
+### Backend (Orange Pi)
 
----
-
-## Cara Pakai
-
-### Login
-- Buka `http://IP-ORANGE-PI:80` di browser.
-- Masuk dengan username `admin`, password `password`.
-
-### Dashboard
-- Lihat **Jadwal Sholat** — waktu aktif otomatis ter-highlight.
-- **Play Murottal** — pilih surah, klik tombol play. Status mixer otomatis ON.
-- **Volume** — klik icon speaker, geser slider.
-- **Mixer** — toggle ON/OFF manual.
-- **Stop Audio** — hentikan semua audio (panic button).
-
-### Studio AI
-- **Generate** — isi nama + teks, klik "Generate & Simpan". Audio otomatis terputar di browser.
-- **Upload** — pilih file MP3/WAV/OGG, klik upload.
-- **Pustaka** — preview play (browser saja, tidak ke mixer), hapus audio.
-
-### Atur Pengumuman
-- **Buat Jadwal** — pilih nama, tipe suara (library/murottal), file, waktu.
-- **Daftar Jadwal** — toggle aktif/mati, edit, hapus.
-- Eksekusi otomatis saat waktu tiba.
-
-### Log
-- Riwayat lengkap semua aktivitas sistem.
-
----
-
-## Deploy ke Orange Pi 3 LTS
-
-### 1. Install System Dependencies
+#### 1. Install System Dependencies
 ```bash
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv vlc vlc-bin git
 ```
 
-### 2. Clone & Setup
+#### 2. Install Tailscale
 ```bash
-git clone <repo-url> /home/orangepi/announcer_pro
-cd /home/orangepi/announcer_pro
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up --auth-key=KEY_DARI_ADMIN --hostname=orange-announcer
+```
+
+#### 3. Clone & Setup Backend
+```bash
+git clone <repo-url> /home/orangepi/announcer-backend
+cd /home/orangepi/announcer-backend
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+cp .env.example .env
+nano .env   # Isi konfigurasi
 ```
 
-### 3. GPIO Relay
-Pastikan `OPi.GPIO` terinstall (ada di requirements.txt).  
-Relay terhubung ke **GPIO Pin 7** (konfigurasi di `config.py`).  
-Saat server jalan: `GPIO.output(PIN_RELAY, GPIO.HIGH)` = mixer ON, `GPIO.LOW` = mixer OFF.
+#### 4. GPIO Relay
+Relay terhubung ke GPIO Pin 7. Pastikan OPi.GPIO terinstall.
 
-### 4. Audio Output
-Set default audio ke 3.5mm jack (bukan HDMI):
+#### 5. Audio Output
 ```bash
-sudo alsamixer        # Atur output
-amixer cset numid=3 1 # 1=jack 3.5mm, 2=HDMI
+amixer cset numid=3 1  # 1=jack 3.5mm, 2=HDMI
 ```
 
-### 5. Systemd Service (Auto-start)
+#### 6. Systemd Service (Auto-start)
 ```bash
-sudo cp announcer-pro.service /etc/systemd/system/
+sudo cp announcer-api.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable announcer-pro
-sudo systemctl start announcer-pro
+sudo systemctl enable announcer-api
+sudo systemctl start announcer-api
 ```
 
-Cek status:
+#### 7. Cek Status
 ```bash
-sudo systemctl status announcer-pro
-journalctl -u announcer-pro -f  # lihat log real-time
+sudo systemctl status announcer-api
+journalctl -u announcer-api -f
 ```
 
-### 6. Firewall
+### Frontend (Lab Server)
+
+#### 1. Copy static files
 ```bash
-sudo ufw allow 80/tcp
-sudo ufw allow 5000/tcp
+cp -r frontend-dashboard/* /var/www/announcer/
 ```
 
-### 7. Akses
-Buka browser → `http://IP-ORANGE-PI:80` atau `http://IP-ORANGE-PI:5000` (fallback).
+#### 2. Nginx Configuration
+```nginx
+server {
+    listen 80;
+    server_name announcer.domain.com;
+
+    root /var/www/announcer;
+    index index.html;
+
+    # Static files
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API proxy ke Orange Pi via Tailscale
+    location /api/ {
+        proxy_pass http://TAILSCALE-IP:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # Audio files proxy
+    location /suara/ {
+        proxy_pass http://TAILSCALE-IP:5000;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+#### 3. Cloudflare Tunnel
+```bash
+cloudflared tunnel create announcer
+cloudflared tunnel route dns announcer announcer.domain.com
+cloudflared tunnel run announcer
+```
 
 ---
 
 ## API Endpoints
 
-### Public (setelah login)
-| Route | Method | Fungsi |
-|-------|--------|--------|
-| `/` | GET | Dashboard utama |
-| `/studio` | GET | Halaman Studio AI |
-| `/manajemen` | GET | Halaman manajemen jadwal |
-| `/logs` | GET | Halaman log sistem |
-| `/login` | GET/POST | Login |
+### Auth
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| POST | `/api/login` | Login, dapat JWT token |
+| POST | `/api/verify` | Cek validitas token |
 
-### API (AJAX JSON)
-| Route | Method | Fungsi |
-|-------|--------|--------|
-| `/api/prayer-times` | GET | Jadwal sholat + tanggal |
-| `/api/recent-logs` | GET | 3 log terbaru |
-| `/api/surah-list` | GET | Daftar surah dari EQuran |
-| `/api/playback-status` | GET | Status play, volume, mixer |
+### Health & Status
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/health` | Cek backend hidup |
+| GET | `/api/status` | Status Orange Pi, speaker, mixer |
 
-### Actions
-| Route | Method | Fungsi |
-|-------|--------|--------|
-| `/play_murottal` | POST | Putar streaming surah |
-| `/stop_audio` | POST | Hentikan semua audio |
-| `/set_volume` | POST | Set volume (0-100) |
-| `/toggle_mixer` | POST | Toggle mixer ON/OFF |
-| `/get_mixer_status` | GET | Cek status mixer |
-| `/proses_suara` | POST | Generate audio AI |
-| `/upload_audio` | POST | Upload file audio |
-| `/hapus_audio/<id>` | GET | Hapus audio |
-| `/tambah_jadwal` | POST | Tambah jadwal baru |
-| `/edit_jadwal` | POST | Edit jadwal |
-| `/hapus_jadwal/<id>` | GET | Hapus jadwal |
-| `/toggle_jadwal/<id>` | POST | Aktif/nonaktif jadwal |
-| `/suara/<filename>` | GET | Serve file audio |
-| `/logout` | GET | Logout |
+### Announcement
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| POST | `/api/announce` | Kirim pengumuman (TTS → play) |
+| POST | `/api/stop` | Hentikan semua audio |
+| GET | `/api/history` | Riwayat pengumuman |
 
----
+### Playback
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| POST | `/api/play-murottal` | Putar streaming surah |
+| POST | `/api/set-volume` | Set volume (0-100) |
+| POST | `/api/toggle-mixer` | Toggle mixer ON/OFF |
+| GET | `/api/playback-status` | Status play, volume, mixer |
 
-## Optimasi Performa
+### Studio
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| POST | `/api/proses-suara` | Generate audio AI |
+| POST | `/api/upload-audio` | Upload file audio |
+| GET | `/api/audio-list` | Daftar audio library |
+| DELETE | `/api/audio/{id}` | Hapus audio |
 
-### Di sisi Backend
-- **Caching in-memory** — jadwal sholat di-cache 6 jam, daftar surah 24 jam. Tidak perlu request API tiap halaman di-refresh.
-- **Threading untuk delayed play** — `_delayed_play()` jalan di `daemon=True` thread, Flask response instan.
-- **Waitress multi-threaded** — handle banyak request concurrent tanpa blok.
-- **Getter `is_mixer_on()`** — hindari bug immutable variable saat import.
+### Data
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/prayer-times` | Jadwal sholat + tanggal |
+| GET | `/api/surah-list` | Daftar surah dari EQuran |
 
-### Di sisi Frontend
-- **AJAX polling** — ganti `window.location.reload()` dengan `fetch()` periodik (60s prayer, 30s logs, 15s playback). Bandwidth minimal.
-- **Tailwind lokal** — `static/js/tailwind.js` (~407KB) — tidak perlu CDN, offline-friendly.
-- **Font Google di-cache browser** — Google Fonts diload sekali, browser cache.
-- **Tanpa library berat** — tidak ada jQuery, React, Vue. Vanilla JS + Tailwind.
-- **Tanpa efek GPU-heavy** — tidak ada backdrop-filter, blur, atau animasi CSS kompleks.
+### Schedules
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/schedules` | Daftar jadwal |
+| POST | `/api/schedules` | Tambah jadwal baru |
+| PUT | `/api/schedules/{id}` | Edit jadwal |
+| DELETE | `/api/schedules/{id}` | Hapus jadwal |
+| POST | `/api/schedules/{id}/toggle` | Aktif/nonaktif jadwal |
 
----
+### Audio
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/audio/{filename}` | Serve audio file preview |
 
-## Troubleshooting
-
-### Server tidak bisa bind port 80
-Fallback otomatis ke port 5000. Akses via `http://IP:5000`.
-
-### GPIO error di Windows
-GPIO otomatis terdeteksi tidak tersedia (mode simulasi). Relay tidak aktif, fungsi lain tetap jalan.
-
-### VLC tidak bisa play audio
-Pastikan VLC terinstall: `sudo apt install vlc vlc-bin`.  
-Cek audio device: `vlc --audio-device-list`.
-
-### API jadwal sholat gagal
-Cek koneksi internet. Data di-cache 6 jam — jika sebelumnya pernah sukses, data lama tetap dipakai.
-
-### Mixer tidak mati otomatis
-Timer auto-off 30 menit diatur via APScheduler. Jika server restart, timer di-reset. Matikan manual via tombol Mixer atau Stop Audio.
+### Logs
+| Method | Endpoint | Fungsi |
+|--------|----------|--------|
+| GET | `/api/logs` | Semua log (limit 50) |
+| GET | `/api/recent-logs` | 3 log terbaru |
 
 ---
 
